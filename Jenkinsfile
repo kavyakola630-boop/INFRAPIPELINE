@@ -2,8 +2,10 @@ pipeline {
     agent { label 'INFRA' }
 
     stages {
+
         stage('Git Checkout') {
             steps {
+                // ✅ Use your GitHub token credentials if the repo is private
                 git branch: 'main',
                     credentialsId: 'github_token',
                     url: 'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
@@ -11,31 +13,30 @@ pipeline {
         }
 
         stage('Terraform Init') {
-            steps { sh 'terraform init' }
+            steps {
+                // ✅ -upgrade ensures latest provider version (~> 5.0)
+                sh 'terraform init -upgrade'
+            }
         }
 
         stage('Terraform Validate') {
-            steps { sh 'terraform validate' }
+            steps {
+                sh 'terraform validate'
+            }
         }
 
         stage('Terraform Format') {
-            steps { sh 'terraform fmt -check' }
+            steps {
+                // ✅ -check ensures no format drift; will fail if unformatted
+                sh 'terraform fmt -check'
+            }
         }
 
         stage('Infra Scan') {
-            steps { sh 'terraform scan || true' } // optional
+            steps {
+                // ✅ Optional: skip failure for scan warnings
+                sh 'terraform scan || true'
+            }
         }
 
-        stage('Lint') {
-            steps { sh 'tflint || true' }
-        }
-
-        stage('Terraform Plan') {
-            steps { sh 'terraform plan' }
-        }
-
-        stage('Terraform Apply') {
-            steps { sh 'terraform apply -auto-approve' }
-        }
-    }
-}
+        sta
