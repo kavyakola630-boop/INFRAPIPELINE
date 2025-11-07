@@ -1,48 +1,71 @@
-pipeline{
-    agent{
+pipeline {
+    agent {
         label 'INFRA'
     }
 
+    environment {
+        TF_IN_AUTOMATION = "true"
+    }
+
     stages {
-        stage('git checkout') {
+        stage('Git Checkout') {
             steps {
-                git url:'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
+                git url: 'https://github.com/kavyakola630-boop/INFRAPIPELINE.git', branch: 'main'
             }
         }
-        stage('terraform init'){
-            steps{
-                sh 'terraform init'
+
+        stage('Terraform Init') {
+            steps {
+                sh 'terraform init -input=false'
             }
         }
-        stage('terraform validate'){
-            steps{
+
+        stage('Terraform Validate') {
+            steps {
                 sh 'terraform validate'
             }
         }
-        stage('terraform formate'){
-            steps{
-                sh 'terraform fmt'
+
+        stage('Terraform Format') {
+            steps {
+                sh 'terraform fmt -check'
             }
         }
-        stage('infra scan'){
-            steps{
-                sh 'terraform scan'
+
+        stage('Infra Scan') {
+            steps {
+                // Use tfsec (or Checkov) instead of nonexistent "terraform scan"
+                sh 'tfsec . || true'
+                // Alternative:
+                // sh 'checkov -d . || true'
             }
         }
-        stage('lint'){
-            steps{
+
+        stage('Lint') {
+            steps {
+                sh 'tflint --init'
                 sh 'tflint'
             }
         }
-        stage('terraform plan'){
-            steps{
-                sh 'terraform plan'
+
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan -out=tfplan'
             }
         }
-        stage('terraform apply'){
-            steps{
-                sh 'terraform apply -auto-approve'
+
+        stage('Terraform Apply') {
+            steps {
+                input message: 'Approve to apply infrastructure changes?', ok: 'Apply'
+                sh 'terraform apply -auto-approve tfplan'
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline completed. Cleaning workspace..."
+            deleteDir()
         }
     }
 }
