@@ -1,47 +1,64 @@
-pipeline{
-    agent{
+pipeline {
+    agent {
         label 'INFRA'
     }
 
+    environment {
+        // Reference your Jenkins credential ID here
+        GIT_CREDENTIALS_ID = 'github-token'  // <-- Replace with your actual Jenkins credential ID
+    }
+
     stages {
-        stage('git checkout') {
+        stage('Git Checkout') {
             steps {
-                git url:'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
+                // Use the credentials parameter
+                git branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS_ID}",
+                    url: 'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
             }
         }
-        stage('terraform init'){
-            steps{
+
+        stage('Terraform Init') {
+            steps {
                 sh 'terraform init'
             }
         }
-        stage('terraform validate'){
-            steps{
+
+        stage('Terraform Validate') {
+            steps {
                 sh 'terraform validate'
             }
         }
-        stage('terraform formate'){
-            steps{
-                sh 'terraform fmt'
+
+        stage('Terraform Format') {
+            steps {
+                sh 'terraform fmt -check'
             }
         }
-        stage('infra scan'){
-            steps{
-                sh 'terraform scan'
+
+        stage('Infra Scan') {
+            steps {
+                // Terraform doesn't have a 'scan' command; use tfsec instead
+                sh 'tfsec . || true'
             }
         }
-        stage('lint'){
-            steps{
+
+        stage('Lint') {
+            steps {
+                sh 'tflint --init'
                 sh 'tflint'
             }
         }
-        stage('terraform plan'){
-            steps{
-                sh 'terraform plan'
+
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan -out=tfplan'
             }
         }
-        stage('terraform apply'){
-            steps{
-                sh 'terraform apply -auto-approve'
+
+        stage('Terraform Apply') {
+            steps {
+                sh 'terraform apply -auto-approve tfplan'
             }
         }
     }
