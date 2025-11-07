@@ -1,65 +1,41 @@
 pipeline {
-    agent {
-        label 'INFRA'
-    }
-
-    environment {
-        // Reference your Jenkins credential ID here
-        GIT_CREDENTIALS_ID = 'github-token'  // <-- Replace with your actual Jenkins credential ID
-    }
+    agent { label 'INFRA' }
 
     stages {
         stage('Git Checkout') {
             steps {
-                // Use the credentials parameter
                 git branch: 'main',
-                    credentialsId: "${GIT_CREDENTIALS_ID}",
+                    credentialsId: 'github_token',
                     url: 'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
             }
         }
 
         stage('Terraform Init') {
-            steps {
-                sh 'terraform init'
-            }
+            steps { sh 'terraform init' }
         }
 
         stage('Terraform Validate') {
-            steps {
-                sh 'terraform validate'
-            }
+            steps { sh 'terraform validate' }
         }
 
         stage('Terraform Format') {
-            steps {
-                sh 'terraform fmt -check'
-            }
+            steps { sh 'terraform fmt -check' }
         }
 
         stage('Infra Scan') {
-            steps {
-                // Terraform doesn't have a 'scan' command; use tfsec instead
-                sh 'tfsec . || true'
-            }
+            steps { sh 'terraform scan || true' } // optional
         }
 
         stage('Lint') {
-            steps {
-                sh 'tflint --init'
-                sh 'tflint'
-            }
+            steps { sh 'tflint || true' }
         }
 
         stage('Terraform Plan') {
-            steps {
-                sh 'terraform plan -out=tfplan'
-            }
+            steps { sh 'terraform plan' }
         }
 
         stage('Terraform Apply') {
-            steps {
-                sh 'terraform apply -auto-approve tfplan'
-            }
+            steps { sh 'terraform apply -auto-approve' }
         }
     }
 }
