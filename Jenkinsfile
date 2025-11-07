@@ -5,7 +5,6 @@ pipeline {
 
         stage('Git Checkout') {
             steps {
-                // ✅ Use your GitHub token credentials if the repo is private
                 git branch: 'main',
                     credentialsId: 'github_token',
                     url: 'https://github.com/kavyakola630-boop/INFRAPIPELINE.git'
@@ -14,7 +13,6 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                // ✅ -upgrade ensures latest provider version (~> 5.0)
                 sh 'terraform init -upgrade'
             }
         }
@@ -27,16 +25,41 @@ pipeline {
 
         stage('Terraform Format') {
             steps {
-                // ✅ -check ensures no format drift; will fail if unformatted
                 sh 'terraform fmt -check'
             }
         }
 
         stage('Infra Scan') {
             steps {
-                // ✅ Optional: skip failure for scan warnings
                 sh 'terraform scan || true'
             }
         }
 
-        sta
+        stage('Lint') {
+            steps {
+                sh 'tflint || true'
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan -out=tfplan'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                sh 'terraform apply -auto-approve tfplan'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Terraform Infrastructure Deployed Successfully!'
+        }
+        failure {
+            echo '❌ Pipeline Failed — Please check logs above.'
+        }
+    }
+}
